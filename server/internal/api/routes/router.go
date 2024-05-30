@@ -3,17 +3,32 @@ package routes
 import (
 	"net/http"
 
+	"github.com/andrearcaina/echo/internal/api/http/handler"
 	"github.com/andrearcaina/echo/pkg/utils"
+	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
 )
 
-func InitAPI() *http.ServeMux {
-	mux := http.NewServeMux()
+// InitRouter initializes the routes for the web server
+func InitRouter() chi.Router {
+	// the underlying chi router is just a http.NewServeMux
+	r := chi.NewRouter()
+	// chi middleware
+	r.Use(middleware.Logger)
+	r.Use(middleware.Recoverer)
 
-	mux.HandleFunc("GET /", func(w http.ResponseWriter, r *http.Request) {
-		test := map[string]string{"message": "Hello, World!"}
-
-		utils.SendJSON(w, http.StatusOK, test)
+	// the root route
+	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
+		utils.SendJSON(w, http.StatusOK, map[string]string{"message": "Hello World!"})
 	})
 
-	return mux
+	// testing custom handler
+	handler := handler.CustomHandler{}
+
+	// the api route that will be used for all api endpoints
+	r.Route("/api/v1", func(r chi.Router) {
+		r.Mount("/handle", handler.InitRoutes())
+	})
+
+	return r
 }
